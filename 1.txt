@@ -1,0 +1,151 @@
+1 版本号是 Vue.version = '2.6.9';流程如下
+2 源码里在5051行声明了一个Vue构造函数，使用的话要前面加上new生成实例,我们使用Vue的时候就是这么使用的
+3 首先在5059行左右执行了initMixin(Vue); stateMixin(Vue); eventsMixin(Vue);  lifecycleMixin(Vue); renderMixin(Vue);函数
+  3.1 initMixin函数在Vue的原型上定义了_init方法，在使用new Vue（）生成实例的时候调用_init方法
+  3.2 stateMixin函数在Vue原型上增加了$data,$props,$set,$delete,$watch属性和方法
+  3.3 eventsMixin函数在Vue原型上加上$on方法，$once,$off,$emit方法
+  3.4 lifecycleMixin函数在原型上增加_update，$forceUpdate，$destroy方法
+  3.5 renderMixin在函数的原型上添加$nextTick，_render方法外，还增加_o，_n，_s,_l,_t,_q,_i,_m,_f,_k,_b,_v,_e,_u,_g,_d,_p方法，分别是
+
+  Vue.prototye = {
+    _init:function(options){},
+    >>  传入的参数options就是我们使用new Vue生成vue实例写入的参数，每个vue实例的_uid属性累加 ，_isVue设置为true避免被监听，
+    >>  区分是否是组件，如果是组件，设置options继承构造函数的option,parent,$listenter等属性和方法，如不是合并与构造函数的options
+    >>  调用initProxy,调用代理，如果存在不属于data里面的属性抛出警告
+    >>  然后调用initLifecycle函数，设置实例的$parent,$children,以及将自身加入到父组件的$children里，$root最高父组件,然后为生命周期设置一些初始前参数，
+    >>   _watcher=_inactive =null,_directInactive = _isMounted = _isDestroyed = _isBeingDestroyed = false;
+    $data: {return Vue._data},
+    >> $data获取到的是vue实例的_data属性
+    $props: {return Vue._props},
+    >>$props获取到的是vue实例的_props属性
+    $watch: function(){},
+    >> 设置监听函数
+    $set: function(){}, 
+    >> 添加设置$data里属性的方法，并设置观察者 
+    $delete: function(){},
+    >> 添加删除$delete里属性的方法，并跟新观察者
+    $on: function(){},
+    >> 为vue实例添加事件处理，如果传入的event是个数组，递归自己最后调用的还是单个的情况，也就是else后面(vm._events[event] || (vm._events[event] = [])).push(fn);为每一个单个事件名，最为实例属性，对应的是事件处理方法组成的一个数组
+    $off: function(){},
+    >> off方法有两个参数，event事件和fn方法，
+    >> 如果没有参数，将vue的_event属性设置为Object.create(null)空对象，移除了所有的事件和方法
+    >> 如果有event事件参数是一个数组递归调用自己变成单个事件解除，取到单个事件名对应的绑定函数，如果绑定的函数参数为空，也就意味着这个事件所有的方法都要移除，所有这样写vm._events[event] = null
+    >> 如果函数参数有，则将取到事件对应的方法数组遍历，去除传入的单个方法
+    $once: function(){},
+    // 先用$on方法绑定，执行方法的时候先用$off方法解除绑定，回调函数在用apply调用，
+    $emit: function(){},
+    // 取到事件对应的方法，有可能是数组，取到emit方法除了第一个参数事件名之前的其他函数，然后使用apply或者call执行方法，这里的this采用的是函数的上下文，所有是执行函数所在文件的this，哈哈哈，就是这样子
+    _update: function(){},
+    >> vm的vnode属性切换，设置当前运行的实例是自己，然后重新渲染dom，将之前的vnode的__vue__属性设为null,当前的设为vnode,然后激活组件切换到之前的实例,
+    >> 调用__patch__方法生成的代码放到vm.$el属性下
+    $forceUpdate: function(){},
+    >> 实例上有_watcher监听者，监听者执行update方法,更新
+    $destory: function(){},
+    >> 执行beforeDestroy生命周期里的方法，将自己从父组件的$children数组中删除自己，清除观察者和监听这，再更新dom，执行destroyed生命周期，最后一处所有事件和方法
+    $nextTick: function(){},
+    >> callbacks作为全局变量，方法添加到callbacks,如果能使用promise就使用promise，如果不能就使用其他的异步或者回调函数
+    _render: function(){},
+    >>生成vnode
+    $mount(): function(){},
+    >> 
+    _o: function(){}, >> 对v-once处理，渲染完后标记为静态内容,将vNode的isStatic设置为true,isonce设置为false
+    _n: function(){}, >> 转换为整数数字
+    _s: function(){}, >> 转换为字符串
+    _l: function(){}, >> 处理v-for指令
+    _t: function(){}, >> 处理slot
+    _q: function(){}, >> 两个对象或者两个值包含的内容值完全一样
+    _i: function(){}, >> 数组中的某个值与第二个参数比较值是否相同
+    _m: function(){}, >> 帮助运行static tree静态树
+    _f: function(){}, >> 处理filter过滤器
+    _k: function(){}, >> 处理数组和对象中的key
+    _b: function(){}, >> 绑定的必须是对象或者数组的校验
+    _v: function(){}, >> 创建文字vnode
+    _e: function(){}, >> 创建空vnode
+    _u: function(){}, >> 解决slot-scope
+    _d: function(){}, >> 解决v-on绑定的函数
+    _g: function(){}, >> 这个函数是给定数组，对象以数组中的前一个值为key，后一个值为value这个的逻辑一直到最后，不知道要干什么
+    _p: function(){}, >> 获取有前缀的值
+  }
+ 
+4 然后在5406行左右执行了initGlobalAPI函数，主要是给Vue函数自身添加config,util,set,delete,nextTick,observable,options等属性和方法
+   4.1 给options里的组件，指令，过滤器设置初始对象，options
+   4.2 扩展options里面component组件
+   4.3 调用initUse(Vue)方法 调用vue的插件
+   4.4 initMixin$1(Vue)方法 扩展mixin里的参数
+   4.5 initExtend(Vue)方法 将父组件和子组件的原型链合并起来，
+   4.6 initAssetRegisters(Vue)方法 生命周期方法的一些调用和校验
+   4.7 
+   Vue = {
+       _uid: 0,//随着vue实例的数目累加
+       _isVue: true, //避免被监听
+       _self: Vue，设置self属性指向本身
+       $parent: {},
+       $children: [],
+       $root: {},
+       $data: vm._data,
+       $props: vm._props,
+       condig: {},
+       _vnode: {},
+       util: {
+          warn: warn, >>  警告错误
+          extend: extend, >>  扩展
+          mergeOptions: mergeOptions,>> options合并
+          defineReactive: defineReactive$$1 >> 设置属性，get,set
+       },
+       set: function(){}, >> 设置对象的属性值
+       delete: function(){}, >> 删除对象的属性
+       nextTick: function(){}, >> 异步操作
+       observable: function(){}, >> 监听vnode对象 observe
+       options: {
+           component: 扩展参数里组件的一些方法和事件以及生命周期
+       },
+
+   }
+
+   5 研究一下vue中的双向绑定,defineReactive函数中，主要是属性的get,set函数
+    5.1 首先生成一个一个Dep实例,Dep是一个函数，有uid属性实现累加和subs属性是一个数组
+
+    Dep = {
+        id : number++,
+        subs: [], >> watcher组成的数组，
+        removeSub: [], >>删除特定watcher,
+        depend: [], 制定watcher添加dep,
+        notify: function(){},watchers执行update
+        target: >> 特定的watcher,
+    }
+
+    watcher = { >>参数有vm, expOrFn, cb,options,isRenderWatcher
+      get: >> expOrFn.toString(),设置为getter,调用getter,并且遍历自属性的getter
+      value: >> this.get(),
+      expression: >> expOrFn.toString(),
+      cb: [functions], >>回调方法组成的数组，
+      deps: [], Dep数组
+      newDeps: [], >> 新添加的Dep组成的数组
+      depIds: [], >>
+      newDepIds: [], >>
+      addDep: >>newDeps添加dep,dep添加本身watcher
+      cleanupDeps: >>清除依赖的dep，
+      run: >> 执行回调和get
+      update: >>执行run，
+      queueWatcher： >>执行队列，子组件的更新，然后执行active,update生命周期，执行回调
+      evaluate: >>执行get(),
+      depend: 组成的dep数组添加自身，
+      tearDown: 收集到的dep数组都移除自己
+    }
+
+    observe = {
+      walk: function(){},>> 设置对象的属性的value,getter,setter,
+      observeArray: function(){},>> >>遍历数组最后还是执行的是walk
+    }
+
+    6 updateChildren函数是vue里面经典的diff算法，新vnode组成vnewNodes,旧node组成少数族oldNodes, 用四个变量oldEndVnode，newEndVnode，oldStartVnode，newStartVnode四个变量标识遍历新旧两组vnode的当前值
+      6.1 先检查前数组oldNodes的首尾是否有vnode实例，如果没有，oldStartVnode-1或者oldStartVnode+1，否则往下执行
+      6.2 比较两个数组的开始，如果相等，oldStartVnode+1，newStartVnode+1，否则往下执行
+      6.3 比较两个数组的结尾，如果相等，oldEndVnode-1，newEndVnode-1,否则往下执行
+      6.4 比较oldNodes的开始和vnewNodes的结尾，如果相等，oldStartVnode+1和newEndVnode-1,否则往下执行
+      6.5 比较oldNodes的结尾和vnewNodes的开始，如果相等，newStartVnode+1和oldEndVnode-1,否则往下执行
+      6.6 生成还没有比较的oldNodes组成的数组，收集他们的key，组成oldKeyToIdx
+      6.7 最新的newStartvnode的key判断是否在上一步生成的key的数据中，或者与剩下旧vnode是否值相等找出相等的index
+      6.8 若有上一步的key没有找到，生成新的vnode,如果找到判断是否相等，如果不相等，生成新的vnode,如果相等，插入对应vnode之后
+      6.9 如果最后oldStartVnode>oldEndVnode 生成新的vnode,如果newStartVnode>newEndVnode,删除vnode
+  
