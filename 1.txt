@@ -5,7 +5,7 @@
   3.2 stateMixin函数在Vue原型上增加了$data,$props,$set,$delete,$watch属性和方法
   3.3 eventsMixin函数在Vue原型上加上$on方法，$once,$off,$emit方法
   3.4 lifecycleMixin函数在原型上增加_update，$forceUpdate，$destroy方法
-  3.5 renderMixin在函数的原型上添加$nextTick，_render方法外，还增加_o，_n，_s,_l,_t,_q,_i,_m,_f,_k,_b,_v,_e,_u,_g,_d,_p方法，分别是
+  3.5 renderMixin在函数的原型上添加$nextTick，_render方法外，还增加_o，_n，_s,_l,_t,_q,_i,_m,_f,_k,_b,_v,_e,_u,_g,_d,_p方法，分别是: 
 
   Vue.prototye = {
     _init:function(options){},
